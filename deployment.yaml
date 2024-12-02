@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jellyfin
+  name: jellyfin
+  namespace: jellyfin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jellyfin
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: jellyfin
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - <node name> # specify the node name where you want pod to run
+      containers:
+      - image: jellyfin/jellyfin:10.10.3 # version can be changed 
+        name: jellyfin
+        resources: {}
+        ports:
+        - containerPort: 8096 # port for accessing webui
+          name: http-tcp
+          protocol: TCP
+
+        env:
+        - name: JELLYFIN_PublishedServerUrl
+          value: "http://<domain>:80" # change to your domain
+        - name: PGID
+          value: "1000"
+        - name: PUID
+          value: "1000"
+        - name: TZ
+          value: "Asia/Almaty" # change to your timezone
+
+        volumeMounts:
+        - mountPath: "/config" # path to config 
+          name: jellyfin-config
+        - mountPath: "/cache" # path to cache
+          name: jellyfin-cache
+        - mountPath: "/media" # path to media
+          name: media
+      volumes:
+      - name: jellyfin-config
+        hostPath:
+          path: /storage/jellyfin/config # path on the server
+      - name: jellyfin-cache
+        hostPath:
+          path: /storage/jellyfin/cache # path on the server
+      - name: media
+        hostPath:
+          path: /storage/media # path on the server
